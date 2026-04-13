@@ -1,15 +1,12 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { INITIAL_WORDS } from "./words.js";
-
-
 import narutoImg from "./assets/naruto.png";
-
 import luffyImg  from "./assets/luffy.png";
 
 const CATEGORIES = [
-  { id: "onepiece",    label: "One Piece",   emoji: "🏴‍☠️", color: "#f97316" },
-  { id: "naruto",      label: "Naruto",       emoji: "🍥",  color: "#f59e0b" },
-  { id: "harrypotter", label: "Harry Potter", emoji: "⚡",  color: "#a855f7" },
+  { id:"onepiece",    label:"One Piece",   emoji:"🏴‍☠️", color:"#f97316", grad:"linear-gradient(135deg,#f97316,#ef4444)" },
+  { id:"naruto",      label:"Naruto",       emoji:"🍥",  color:"#f59e0b", grad:"linear-gradient(135deg,#f59e0b,#d97706)" },
+  { id:"harrypotter", label:"Harry Potter", emoji:"⚡",  color:"#a855f7", grad:"linear-gradient(135deg,#a855f7,#7c3aed)" },
 ];
 
 const LEVELS = { básico:"#10b981", intermedio:"#f59e0b", avanzado:"#ef4444" };
@@ -70,10 +67,7 @@ export default function App() {
   const buildOpts = useCallback((card) => shuffle([card.word, ...card.distractors]), []);
 
   const startStudy = (catId, mode) => {
-    // Flashcard respeta SRS — Escribir y Completar usan todas las palabras shuffleadas
-    const pool = mode === "flash"
-      ? getDue(catId)
-      : shuffle(cards[catId] || []);
+    const pool = mode === "flash" ? getDue(catId) : shuffle(cards[catId] || []);
     if (!pool.length) { alert("¡No hay tarjetas pendientes! Vuelve más tarde 🎉"); return; }
     const q = pool.map(c => c.id);
     setActiveCat(catId); setQueue(q); setQIdx(0);
@@ -103,11 +97,17 @@ export default function App() {
     }));
     const next = qIdx + 1;
     if (next >= queue.length) { setScreen("done"); return; }
-    setQIdx(next); setFlipped(false); setTyped(""); setWriteResult(null); setChosen(null);
-    if (studyMode === "fill") {
-      const nextCard = (cards[activeCat]||[]).find(c => c.id === queue[next]);
-      if (nextCard) setOptions(buildOpts(nextCard));
-    }
+    setFlipped(false);
+    setTimeout(() => {
+      setQIdx(next);
+      setTyped("");
+      setWriteResult(null);
+      setChosen(null);
+      if (studyMode === "fill") {
+        const nextCard = (cards[activeCat]||[]).find(c => c.id === queue[next]);
+        if (nextCard) setOptions(buildOpts(nextCard));
+      }
+    }, 50);
   };
 
   const checkWrite = () => {
@@ -131,26 +131,9 @@ export default function App() {
   // ── HOME ──────────────────────────────────────────────────────────────────
   if (screen === "home") return (
     <div style={{ minHeight:"100vh", background:"#0f0f0f", color:"#f1f1f1", fontFamily:"'Segoe UI',sans-serif", padding:"24px 16px", position:"relative", overflow:"hidden" }}>
+      <img src={narutoImg} alt="Naruto" style={{ position:"fixed", left:0, bottom:0, height:"85vh", maxHeight:700, objectFit:"contain", objectPosition:"bottom", pointerEvents:"none", userSelect:"none", zIndex:0, opacity:0.95 }}/>
+      <img src={luffyImg}  alt="Luffy"  style={{ position:"fixed", right:0, bottom:0, height:"80vh", maxHeight:650, objectFit:"contain", objectPosition:"bottom", pointerEvents:"none", userSelect:"none", zIndex:0, opacity:0.95 }}/>
 
-      {/* Naruto — izquierda */}
-      <img src={narutoImg} alt="Naruto" style={{
-        position:"fixed", left:0, bottom:0,
-        height:"85vh", maxHeight:700,
-        objectFit:"contain", objectPosition:"bottom",
-        pointerEvents:"none", userSelect:"none",
-        zIndex:0, opacity:0.95,
-      }}/>
-
-      {/* Luffy — derecha */}
-      <img src={luffyImg} alt="Luffy" style={{
-        position:"fixed", right:0, bottom:0,
-        height:"80vh", maxHeight:650,
-        objectFit:"contain", objectPosition:"bottom",
-        pointerEvents:"none", userSelect:"none",
-        zIndex:0, opacity:0.95,
-      }}/>
-
-      {/* Contenido */}
       <div style={{ maxWidth:620, margin:"0 auto", position:"relative", zIndex:1 }}>
         <div style={{ textAlign:"center", marginBottom:28 }}>
           <div style={{ fontSize:40 }}>📚</div>
@@ -202,7 +185,6 @@ export default function App() {
       </div>
     </div>
   );
-  
 
   // ── DONE ──────────────────────────────────────────────────────────────────
   if (screen === "done") return (
@@ -223,7 +205,6 @@ export default function App() {
       <div style={{ minHeight:"100vh", background:"#0f0f0f", color:"#f1f1f1", fontFamily:"'Segoe UI',sans-serif", padding:"20px 16px" }}>
         <div style={{ maxWidth:500, margin:"0 auto" }}>
 
-          {/* Top bar */}
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:18 }}>
             <button onClick={()=>setScreen("home")} style={{ background:"none", border:"none", color:"#888", cursor:"pointer", fontSize:22 }}>←</button>
             <div style={{ textAlign:"center" }}>
@@ -233,83 +214,54 @@ export default function App() {
             <div style={{ width:32 }}/>
           </div>
 
-          {/* Progress bar */}
           <div style={{ background:"#1a1a1a", borderRadius:99, height:5, marginBottom:24, overflow:"hidden" }}>
             <div style={{ width:`${(qIdx/queue.length)*100}%`, height:"100%", background:cat?.color, borderRadius:99, transition:"width 0.4s" }}/>
           </div>
 
-          {/* Level badge */}
           <div style={{ textAlign:"center", marginBottom:10 }}>
             <span style={{ background:LEVELS[currentCard.level]+"22", color:LEVELS[currentCard.level], border:`1px solid ${LEVELS[currentCard.level]}44`, borderRadius:20, padding:"3px 12px", fontSize:11, fontWeight:600 }}>{currentCard.level}</span>
           </div>
 
           {/* ── FLASHCARD ── */}
-{studyMode === "flash" && (
-  <>
-    <style>{`
-      .card-scene { perspective: 1000px; height: 260px; cursor: pointer; }
-      .card-inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(.4,0,.2,1); border-radius: 20px; }
-      .card-inner.flipped { transform: rotateY(180deg); }
-      .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 28px; text-align: center; }
-      .card-back-face { transform: rotateY(180deg); }
-      .speak-light { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.35); color: #fff; border-radius: 99px; padding: 6px 16px; font-size: 13px; cursor: pointer; font-weight: 600; }
-      .speak-light:hover { background: rgba(255,255,255,0.3); }
-    `}</style>
+          {studyMode === "flash" && (
+            <>
+              <div
+                onClick={() => setFlipped(f => !f)}
+                style={{ cursor:"pointer", borderRadius:20, minHeight:260, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:12, padding:"28px 24px", textAlign:"center", background: flipped ? cat?.grad : "#111", border:`2px solid ${flipped ? "transparent" : cat?.color}`, transition:"background 0.2s" }}
+              >
+                {!flipped ? (
+                  <>
+                    <div style={{ fontSize:40, fontWeight:800, color:"#fff", letterSpacing:-1 }}>{currentCard.word}</div>
+                    <div style={{ fontSize:14, color:"#777", fontStyle:"italic" }}>{currentCard.phonetic}</div>
+                    <button onClick={e=>{e.stopPropagation();speak(currentCard.word,setVoiceInfo);}} style={{ marginTop:6, background:"#1a1a1a", border:`1px solid ${cat?.color}55`, color:cat?.color, borderRadius:99, padding:"6px 18px", fontSize:13, cursor:"pointer", fontWeight:600 }}>🔊 Escuchar</button>
+                    {voiceInfo && <div style={{ fontSize:10, color:"#555" }}>{voiceInfo}</div>}
+                    <div style={{ fontSize:12, color:"#444", marginTop:4 }}>Toca para revelar</div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ fontSize:26, fontWeight:800, color:"#fff" }}>{currentCard.translation}</div>
+                    <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", fontStyle:"italic", lineHeight:1.6, maxWidth:300 }}>🇺🇸 "{currentCard.example}"</div>
+                    <div style={{ fontSize:13, color:"rgba(255,255,255,0.65)", fontStyle:"italic", lineHeight:1.6, maxWidth:300 }}>🇨🇱 "{currentCard.exampleEs}"</div>
+                    <button onClick={e=>{e.stopPropagation();speak(currentCard.word,setVoiceInfo);}} style={{ background:"rgba(255,255,255,0.2)", border:"1px solid rgba(255,255,255,0.35)", color:"#fff", borderRadius:99, padding:"6px 18px", fontSize:13, cursor:"pointer", fontWeight:600 }}>🔊 {currentCard.word}</button>
+                  </>
+                )}
+              </div>
 
-    <div style={{ textAlign:"center", marginBottom:8 }}>
-      <span style={{ background:LEVELS[currentCard.level]+"22", color:LEVELS[currentCard.level], border:`1px solid ${LEVELS[currentCard.level]}44`, borderRadius:20, padding:"3px 12px", fontSize:11, fontWeight:600 }}>{currentCard.level}</span>
-    </div>
-
-    <div
-      className="card-scene"
-      onClick={() => setFlipped(f => !f)}
-    >
-      <div className={`card-inner${flipped ? " flipped" : ""}`}>
-
-        {/* FRENTE */}
-        <div className="card-face" style={{ background:"#111", border:`2px solid ${cat?.color}` }}>
-          <div style={{ fontSize:40, fontWeight:800, color:"#fff", letterSpacing:-1 }}>{currentCard.word}</div>
-          <div style={{ fontSize:14, color:"#777", fontStyle:"italic" }}>{currentCard.phonetic}</div>
-          <button
-            onClick={e => { e.stopPropagation(); speak(currentCard.word, setVoiceInfo); }}
-            style={{ marginTop:6, background:"#1a1a1a", border:`1px solid ${cat?.color}55`, color:cat?.color, borderRadius:99, padding:"6px 18px", fontSize:13, cursor:"pointer", fontWeight:600 }}
-          >🔊 Escuchar</button>
-          {voiceInfo && <div style={{ fontSize:10, color:"#555" }}>{voiceInfo}</div>}
-          <div style={{ fontSize:12, color:"#444", marginTop:4 }}>Toca para revelar</div>
-        </div>
-
-        {/* REVERSO */}
-        <div className="card-face card-back-face" style={{ background:`linear-gradient(135deg, ${cat?.color}, ${cat?.color}99)` }}>
-          <div style={{ fontSize:26, fontWeight:800, color:"#fff" }}>{currentCard.translation}</div>
-          <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", fontStyle:"italic", lineHeight:1.6, maxWidth:300 }}>🇺🇸 "{currentCard.example}"</div>
-          <div style={{ fontSize:13, color:"rgba(255,255,255,0.65)", fontStyle:"italic", lineHeight:1.6, maxWidth:300 }}>🇨🇱 "{currentCard.exampleEs}"</div>
-          <button
-            className="speak-light"
-            onClick={e => { e.stopPropagation(); speak(currentCard.word, setVoiceInfo); }}
-          >🔊 {currentCard.word}</button>
-        </div>
-
-      </div>
-    </div>
-
-    <div style={{ marginTop:16 }}>
-      {flipped ? (
-        <div style={{ display:"flex", gap:8 }}>
-          {[
-            {l:"😅 No lo sé", q:1, bg:"linear-gradient(135deg,#7f1d1d,#991b1b)", c:"#fca5a5"},
-            {l:"🤔 Difícil",  q:2, bg:"linear-gradient(135deg,#78350f,#92400e)", c:"#fcd34d"},
-            {l:"😎 Fácil",   q:3, bg:"linear-gradient(135deg,#064e3b,#065f46)", c:"#6ee7b7"},
-          ].map(b => (
-            <button key={b.q} onClick={() => advanceCard(b.q)} style={{ flex:1, padding:"13px 0", background:b.bg, color:b.c, border:"none", borderRadius:12, fontWeight:700, fontSize:13, cursor:"pointer" }}>{b.l}</button>
-          ))}
-        </div>
-      ) : (
-        <div style={{ textAlign:"center", color:"#444", fontSize:12 }}>Intenta recordar la traducción antes de voltear</div>
-      )}
-    </div>
-  </>
-)}
-
+              <div style={{ marginTop:16 }}>
+                {flipped ? (
+                  <div style={{ display:"flex", gap:8 }}>
+                    {[
+                      {l:"😅 No lo sé", q:1, bg:"linear-gradient(135deg,#7f1d1d,#991b1b)", c:"#fca5a5"},
+                      {l:"🤔 Difícil",  q:2, bg:"linear-gradient(135deg,#78350f,#92400e)", c:"#fcd34d"},
+                      {l:"😎 Fácil",   q:3, bg:"linear-gradient(135deg,#064e3b,#065f46)", c:"#6ee7b7"},
+                    ].map(b => (
+                      <button key={b.q} onClick={()=>advanceCard(b.q)} style={{ flex:1, padding:"13px 0", background:b.bg, color:b.c, border:"none", borderRadius:12, fontWeight:700, fontSize:13, cursor:"pointer" }}>{b.l}</button>
+                    ))}
+                  </div>
+                ) : <div style={{ textAlign:"center", color:"#444", fontSize:12 }}>Intenta recordar la traducción antes de voltear</div>}
+              </div>
+            </>
+          )}
 
           {/* ── ESCRIBIR ── */}
           {studyMode === "write" && (
@@ -351,10 +303,10 @@ export default function App() {
               {writeResult !== null && (
                 <div style={{ display:"flex", gap:8 }}>
                   {writeResult==="correct"
-                    ? <button onClick={()=>advanceCard(3)} style={{ flex:1, padding:"13px 0", background:"#064e3b", color:"#6ee7b7", border:"none", borderRadius:12, fontWeight:700, fontSize:14, cursor:"pointer" }}>Siguiente →</button>
+                    ? <button onClick={()=>advanceCard(3)} style={{ flex:1, padding:"13px 0", background:"linear-gradient(135deg,#064e3b,#065f46)", color:"#6ee7b7", border:"none", borderRadius:12, fontWeight:700, fontSize:14, cursor:"pointer" }}>Siguiente →</button>
                     : <>
-                        <button onClick={()=>advanceCard(1)} style={{ flex:1, padding:"13px 0", background:"#7f1d1d", color:"#fca5a5", border:"none", borderRadius:12, fontWeight:700, fontSize:13, cursor:"pointer" }}>Repasar pronto</button>
-                        <button onClick={()=>advanceCard(2)} style={{ flex:1, padding:"13px 0", background:"#78350f", color:"#fcd34d", border:"none", borderRadius:12, fontWeight:700, fontSize:13, cursor:"pointer" }}>Entendido →</button>
+                        <button onClick={()=>advanceCard(1)} style={{ flex:1, padding:"13px 0", background:"linear-gradient(135deg,#7f1d1d,#991b1b)", color:"#fca5a5", border:"none", borderRadius:12, fontWeight:700, fontSize:13, cursor:"pointer" }}>Repasar pronto</button>
+                        <button onClick={()=>advanceCard(2)} style={{ flex:1, padding:"13px 0", background:"linear-gradient(135deg,#78350f,#92400e)", color:"#fcd34d", border:"none", borderRadius:12, fontWeight:700, fontSize:13, cursor:"pointer" }}>Entendido →</button>
                       </>
                   }
                 </div>
@@ -372,14 +324,14 @@ export default function App() {
                   {options.map(opt => {
                     const isRight  = opt === currentCard.word;
                     const isPicked = opt === chosen;
-                    let bg="#2a2a2a", border="#3a3a3a", color="#f1f1f1";
+                    let bg="#1e1e1e", border="#333", color="#f1f1f1";
                     if (chosen) {
-                      if (isRight)       { bg="#064e3b"; border="#10b981"; color="#6ee7b7"; }
-                      else if (isPicked) { bg="#7f1d1d"; border="#ef4444"; color="#fca5a5"; }
+                      if (isRight)       { bg="linear-gradient(135deg,#064e3b,#065f46)"; border="#10b981"; color="#6ee7b7"; }
+                      else if (isPicked) { bg="linear-gradient(135deg,#7f1d1d,#991b1b)"; border="#ef4444"; color="#fca5a5"; }
                     }
                     return (
                       <div key={opt} style={{ display:"flex", alignItems:"center", gap:10 }}>
-                        <button onClick={()=>handleFillChoice(opt)} disabled={!!chosen} style={{ flex:1, padding:"12px 16px", background:bg, color, border:`1.5px solid ${border}`, borderRadius:12, fontWeight:700, fontSize:16, cursor:chosen?"default":"pointer", transition:"all 0.2s", textAlign:"left", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                        <button onClick={()=>handleFillChoice(opt)} disabled={!!chosen} style={{ flex:1, padding:"12px 16px", background:bg, color, border:`1.5px solid ${border}`, borderRadius:12, fontWeight:700, fontSize:15, cursor:chosen?"default":"pointer", transition:"all 0.2s", textAlign:"left", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                           <span>{opt}</span>
                           {chosen && isRight  && <span>✅</span>}
                           {chosen && isPicked && !isRight && <span>❌</span>}
@@ -405,10 +357,10 @@ export default function App() {
               {chosen && (
                 <div style={{ display:"flex", gap:8 }}>
                   {isCorrect
-                    ? <button onClick={()=>advanceCard(3)} style={{ flex:1, padding:"13px 0", background:"#064e3b", color:"#6ee7b7", border:"none", borderRadius:12, fontWeight:700, fontSize:14, cursor:"pointer" }}>Siguiente →</button>
+                    ? <button onClick={()=>advanceCard(3)} style={{ flex:1, padding:"13px 0", background:"linear-gradient(135deg,#064e3b,#065f46)", color:"#6ee7b7", border:"none", borderRadius:12, fontWeight:700, fontSize:14, cursor:"pointer" }}>Siguiente →</button>
                     : <>
-                        <button onClick={()=>advanceCard(1)} style={{ flex:1, padding:"13px 0", background:"#7f1d1d", color:"#fca5a5", border:"none", borderRadius:12, fontWeight:700, fontSize:13, cursor:"pointer" }}>Repasar pronto</button>
-                        <button onClick={()=>advanceCard(2)} style={{ flex:1, padding:"13px 0", background:"#78350f", color:"#fcd34d", border:"none", borderRadius:12, fontWeight:700, fontSize:13, cursor:"pointer" }}>Entendido →</button>
+                        <button onClick={()=>advanceCard(1)} style={{ flex:1, padding:"13px 0", background:"linear-gradient(135deg,#7f1d1d,#991b1b)", color:"#fca5a5", border:"none", borderRadius:12, fontWeight:700, fontSize:13, cursor:"pointer" }}>Repasar pronto</button>
+                        <button onClick={()=>advanceCard(2)} style={{ flex:1, padding:"13px 0", background:"linear-gradient(135deg,#78350f,#92400e)", color:"#fcd34d", border:"none", borderRadius:12, fontWeight:700, fontSize:13, cursor:"pointer" }}>Entendido →</button>
                       </>
                   }
                 </div>
