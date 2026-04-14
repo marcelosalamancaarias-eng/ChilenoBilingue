@@ -9,6 +9,11 @@ const CATEGORIES = [
   { id:"harrypotter", label:"Harry Potter", emoji:"⚡",  color:"#a855f7", grad:"linear-gradient(135deg,#a855f7,#7c3aed)" },
 ];
 
+const CHILENISMOS_SUBS = [
+  { id:"chilenismos_simple",   label:"Palabras Simples",     emoji:"🗣️", color:"#e63946", grad:"linear-gradient(135deg,#e63946,#c1121f)", desc:"cachai, bacán, fome..." },
+  { id:"chilenismos_compuesto",label:"Expresiones Compuestas",emoji:"💬", color:"#2563eb", grad:"linear-gradient(135deg,#2563eb,#1d4ed8)", desc:"estoy pato, buena onda..." },
+];
+
 const LEVELS = { básico:"#10b981", intermedio:"#f59e0b", avanzado:"#ef4444" };
 const SRS    = { easy:7*24*3600*1000, medium:24*3600*1000, hard:30*60*1000 };
 
@@ -62,7 +67,8 @@ export default function App() {
   const [chosen,      setChosen]      = useState(null);
   const inputRef = useRef(null);
 
-  const cat       = activeCat ? CATEGORIES.find(c => c.id === activeCat) : null;
+  const allCats = [...CATEGORIES, ...CHILENISMOS_SUBS];
+  const cat       = activeCat ? allCats.find(c => c.id === activeCat) : null;
   const getDue    = useCallback((catId) => (cards[catId]||[]).filter(c => c.due <= Date.now()), [cards]);
   const buildOpts = useCallback((card) => shuffle([card.word, ...card.distractors]), []);
 
@@ -99,10 +105,7 @@ export default function App() {
     if (next >= queue.length) { setScreen("done"); return; }
     setFlipped(false);
     setTimeout(() => {
-      setQIdx(next);
-      setTyped("");
-      setWriteResult(null);
-      setChosen(null);
+      setQIdx(next); setTyped(""); setWriteResult(null); setChosen(null);
       if (studyMode === "fill") {
         const nextCard = (cards[activeCat]||[]).find(c => c.id === queue[next]);
         if (nextCard) setOptions(buildOpts(nextCard));
@@ -123,7 +126,7 @@ export default function App() {
   };
 
   const totalLearned = Object.values(cards).flat().filter(c => c.reps > 0).length;
-  const totalDue     = CATEGORIES.reduce((a, c) => a + getDue(c.id).length, 0);
+  const totalDue     = [...CATEGORIES, ...CHILENISMOS_SUBS].reduce((a, c) => a + getDue(c.id).length, 0);
   const totalWords   = Object.values(cards).flat().length;
   const blankExample = currentCard
     ? currentCard.example.replace(new RegExp(`\\b${currentCard.word}\\b`, "gi"), "______") : "";
@@ -151,7 +154,8 @@ export default function App() {
           ))}
         </div>
 
-        <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+        {/* Categorías normales */}
+        <div style={{ display:"flex", flexDirection:"column", gap:12, marginBottom:16 }}>
           {CATEGORIES.map(c => {
             const due     = getDue(c.id).length;
             const total   = (cards[c.id]||[]).length;
@@ -181,7 +185,53 @@ export default function App() {
             );
           })}
         </div>
-        <p style={{ textAlign:"center", color:"#333", fontSize:11, marginTop:20 }}>Sistema de repetición espaciada integrado 🧠</p>
+
+        {/* Sección Chilenismos */}
+        <div style={{ background:"rgba(26,26,26,0.95)", backdropFilter:"blur(8px)", borderRadius:20, padding:18, border:"1px solid #e6394633", marginBottom:16 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
+            <span style={{ fontSize:28 }}>🇨🇱</span>
+            <div>
+              <div style={{ fontWeight:800, fontSize:16, background:"linear-gradient(90deg,#e63946,#2563eb)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>Chilenismos</div>
+              <div style={{ fontSize:11, color:"#666" }}>Aprende a hablar como un chileno en inglés</div>
+            </div>
+          </div>
+
+          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+            {CHILENISMOS_SUBS.map(c => {
+              const due     = getDue(c.id).length;
+              const total   = (cards[c.id]||[]).length;
+              const learned = (cards[c.id]||[]).filter(x=>x.reps>0).length;
+              const pct     = total>0 ? Math.round((learned/total)*100) : 0;
+              return (
+                <div key={c.id} style={{ background:"#111", borderRadius:14, padding:14, border:`1px solid ${c.color}33` }}>
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                      <span style={{ fontSize:20 }}>{c.emoji}</span>
+                      <div>
+                        <div style={{ fontWeight:700, fontSize:13, color:c.color }}>{c.label}</div>
+                        <div style={{ fontSize:11, color:"#555" }}>{c.desc}</div>
+                      </div>
+                    </div>
+                    <div style={{ textAlign:"right" }}>
+                      {due>0 && <div style={{ background:c.color, color:"#fff", borderRadius:20, padding:"2px 10px", fontSize:11, fontWeight:700, marginBottom:2 }}>{due} pendientes</div>}
+                      <div style={{ fontSize:10, color:"#444" }}>{total} frases · {pct}% dominio</div>
+                    </div>
+                  </div>
+                  <div style={{ background:"#2a2a2a", borderRadius:99, height:4, marginBottom:10, overflow:"hidden" }}>
+                    <div style={{ width:`${pct}%`, height:"100%", background:c.grad, borderRadius:99, transition:"width 0.5s" }}/>
+                  </div>
+                  <div style={{ display:"flex", gap:8 }}>
+                    <button onClick={()=>startStudy(c.id,"flash")} style={{ flex:1, padding:"8px 0", background:c.grad, color:"#fff", border:"none", borderRadius:10, fontWeight:700, fontSize:12, cursor:"pointer" }}>🃏 Flashcard</button>
+                    <button onClick={()=>startStudy(c.id,"write")} style={{ flex:1, padding:"8px 0", background:"#1a1a1a", color:c.color, border:`1px solid ${c.color}55`, borderRadius:10, fontWeight:700, fontSize:12, cursor:"pointer" }}>✍️ Escribir</button>
+                    <button onClick={()=>startStudy(c.id,"fill")}  style={{ flex:1, padding:"8px 0", background:"#1a1a1a", color:c.color, border:`1px solid ${c.color}55`, borderRadius:10, fontWeight:700, fontSize:12, cursor:"pointer" }}>🧩 Completar</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <p style={{ textAlign:"center", color:"#333", fontSize:11, marginTop:8 }}>Sistema de repetición espaciada integrado 🧠</p>
       </div>
     </div>
   );
@@ -192,7 +242,7 @@ export default function App() {
       <div style={{ fontSize:64 }}>🎉</div>
       <h2 style={{ margin:0 }}>¡Sesión completada!</h2>
       <p style={{ color:"#888" }}>Repasaste {queue.length} tarjetas de {cat?.label}.</p>
-      <button onClick={()=>setScreen("home")} style={{ padding:"12px 32px", background:cat?.color||"#f97316", color:"#000", border:"none", borderRadius:12, fontWeight:700, fontSize:15, cursor:"pointer" }}>← Volver</button>
+      <button onClick={()=>setScreen("home")} style={{ padding:"12px 32px", background:cat?.color||"#f97316", color: cat?.id?.includes("chilenismos") ? "#fff" : "#000", border:"none", borderRadius:12, fontWeight:700, fontSize:15, cursor:"pointer" }}>← Volver</button>
     </div>
   );
 
@@ -200,6 +250,7 @@ export default function App() {
   if (screen === "study" && currentCard) {
     const feedback  = writeResult === "wrong" ? getLetterFeedback(typed, currentCard.word) : null;
     const isCorrect = chosen === currentCard.word;
+    const isChilenismo = activeCat?.includes("chilenismos");
 
     return (
       <div style={{ minHeight:"100vh", background:"#0f0f0f", color:"#f1f1f1", fontFamily:"'Segoe UI',sans-serif", padding:"20px 16px" }}>
@@ -220,6 +271,7 @@ export default function App() {
 
           <div style={{ textAlign:"center", marginBottom:10 }}>
             <span style={{ background:LEVELS[currentCard.level]+"22", color:LEVELS[currentCard.level], border:`1px solid ${LEVELS[currentCard.level]}44`, borderRadius:20, padding:"3px 12px", fontSize:11, fontWeight:600 }}>{currentCard.level}</span>
+            {isChilenismo && <span style={{ marginLeft:8, background:"#e6394622", color:"#e63946", border:"1px solid #e6394644", borderRadius:20, padding:"3px 12px", fontSize:11, fontWeight:600 }}>🇨🇱 Chilenismo</span>}
           </div>
 
           {/* ── FLASHCARD ── */}
@@ -227,22 +279,24 @@ export default function App() {
             <>
               <div
                 onClick={() => setFlipped(f => !f)}
-                style={{ cursor:"pointer", borderRadius:20, minHeight:260, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:12, padding:"28px 24px", textAlign:"center", background: flipped ? cat?.grad : "#111", border:`2px solid ${flipped ? "transparent" : cat?.color}`, transition:"background 0.2s" }}
+                style={{ cursor:"pointer", borderRadius:20, minHeight:280, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:12, padding:"28px 24px", textAlign:"center", background: flipped ? cat?.grad : "#111", border:`2px solid ${flipped ? "transparent" : cat?.color}`, transition:"background 0.2s" }}
               >
                 {!flipped ? (
                   <>
-                    <div style={{ fontSize:40, fontWeight:800, color:"#fff", letterSpacing:-1 }}>{currentCard.word}</div>
-                    <div style={{ fontSize:14, color:"#777", fontStyle:"italic" }}>{currentCard.phonetic}</div>
-                    <button onClick={e=>{e.stopPropagation();speak(currentCard.word,setVoiceInfo);}} style={{ marginTop:6, background:"#1a1a1a", border:`1px solid ${cat?.color}55`, color:cat?.color, borderRadius:99, padding:"6px 18px", fontSize:13, cursor:"pointer", fontWeight:600 }}>🔊 Escuchar</button>
+                    {isChilenismo && <div style={{ fontSize:12, color:"#666", marginBottom:4 }}>¿Cómo se dice en inglés? 🇺🇸</div>}
+                    <div style={{ fontSize: isChilenismo ? 32 : 40, fontWeight:800, color:"#fff", letterSpacing: isChilenismo ? 0 : -1 }}>{currentCard.word}</div>
+                    <div style={{ fontSize:13, color:"#777", fontStyle:"italic" }}>{currentCard.phonetic}</div>
+                    <button onClick={e=>{e.stopPropagation();speak(currentCard.translation,setVoiceInfo);}} style={{ marginTop:6, background:"#1a1a1a", border:`1px solid ${cat?.color}55`, color:cat?.color, borderRadius:99, padding:"6px 18px", fontSize:13, cursor:"pointer", fontWeight:600 }}>🔊 Escuchar en inglés</button>
                     {voiceInfo && <div style={{ fontSize:10, color:"#555" }}>{voiceInfo}</div>}
                     <div style={{ fontSize:12, color:"#444", marginTop:4 }}>Toca para revelar</div>
                   </>
                 ) : (
                   <>
-                    <div style={{ fontSize:26, fontWeight:800, color:"#fff" }}>{currentCard.translation}</div>
+                    {isChilenismo && <div style={{ fontSize:12, color:"rgba(255,255,255,0.6)", marginBottom:4 }}>En inglés se dice:</div>}
+                    <div style={{ fontSize:24, fontWeight:800, color:"#fff" }}>{currentCard.translation}</div>
                     <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", fontStyle:"italic", lineHeight:1.6, maxWidth:300 }}>🇺🇸 "{currentCard.example}"</div>
                     <div style={{ fontSize:13, color:"rgba(255,255,255,0.65)", fontStyle:"italic", lineHeight:1.6, maxWidth:300 }}>🇨🇱 "{currentCard.exampleEs}"</div>
-                    <button onClick={e=>{e.stopPropagation();speak(currentCard.word,setVoiceInfo);}} style={{ background:"rgba(255,255,255,0.2)", border:"1px solid rgba(255,255,255,0.35)", color:"#fff", borderRadius:99, padding:"6px 18px", fontSize:13, cursor:"pointer", fontWeight:600 }}>🔊 {currentCard.word}</button>
+                    <button onClick={e=>{e.stopPropagation();speak(currentCard.translation,setVoiceInfo);}} style={{ background:"rgba(255,255,255,0.2)", border:"1px solid rgba(255,255,255,0.35)", color:"#fff", borderRadius:99, padding:"6px 18px", fontSize:13, cursor:"pointer", fontWeight:600 }}>🔊 {currentCard.translation}</button>
                   </>
                 )}
               </div>
@@ -267,36 +321,39 @@ export default function App() {
           {studyMode === "write" && (
             <>
               <div style={{ background:"#1a1a1a", border:`2px solid ${writeResult==="correct"?"#10b981":writeResult==="wrong"?"#ef4444":cat?.color+"44"}`, borderRadius:20, padding:"32px 24px", textAlign:"center", marginBottom:20, transition:"border 0.3s" }}>
-                <div style={{ fontSize:13, color:"#888", marginBottom:6 }}>Escribe en inglés:</div>
-                <div style={{ fontSize:26, fontWeight:700, color:cat?.color, marginBottom:4 }}>{currentCard.translation}</div>
-                <div style={{ fontSize:13, color:"#666", fontStyle:"italic", marginBottom:20 }}>"{currentCard.example.replace(new RegExp(currentCard.word,"gi"), "___")}"</div>
+                {isChilenismo
+                  ? <div style={{ fontSize:13, color:"#888", marginBottom:6 }}>¿Cómo se dice en inglés? 🇺🇸</div>
+                  : <div style={{ fontSize:13, color:"#888", marginBottom:6 }}>Escribe en inglés:</div>
+                }
+                <div style={{ fontSize: isChilenismo ? 24 : 26, fontWeight:700, color:cat?.color, marginBottom:4 }}>{isChilenismo ? currentCard.word : currentCard.translation}</div>
+                <div style={{ fontSize:13, color:"#666", fontStyle:"italic", marginBottom:20 }}>
+                  "{isChilenismo
+                    ? currentCard.exampleEs?.replace(new RegExp(currentCard.word,"gi"), "___")
+                    : currentCard.example?.replace(new RegExp(currentCard.word,"gi"), "___")}"
+                </div>
                 {writeResult === null && (
                   <>
-                    <input ref={inputRef} value={typed} onChange={e=>setTyped(e.target.value)} onKeyDown={e=>e.key==="Enter"&&checkWrite()} placeholder="Escribe la palabra..." style={{ width:"100%", padding:"12px 16px", borderRadius:10, border:`1px solid ${cat?.color}55`, background:"#111", color:"#f1f1f1", fontSize:18, textAlign:"center", outline:"none", boxSizing:"border-box", letterSpacing:2 }}/>
-                    <button onClick={checkWrite} disabled={!typed.trim()} style={{ marginTop:12, padding:"10px 32px", background:cat?.color, color:"#000", border:"none", borderRadius:10, fontWeight:700, fontSize:14, cursor:"pointer", opacity:typed.trim()?1:0.4 }}>Verificar ✓</button>
+                    <input ref={inputRef} value={typed} onChange={e=>setTyped(e.target.value)} onKeyDown={e=>e.key==="Enter"&&checkWrite()} placeholder={isChilenismo ? "Escribe en inglés..." : "Escribe la palabra..."} style={{ width:"100%", padding:"12px 16px", borderRadius:10, border:`1px solid ${cat?.color}55`, background:"#111", color:"#f1f1f1", fontSize:18, textAlign:"center", outline:"none", boxSizing:"border-box", letterSpacing:2 }}/>
+                    <button onClick={checkWrite} disabled={!typed.trim()} style={{ marginTop:12, padding:"10px 32px", background:cat?.color, color: activeCat?.includes("chilenismos") ? "#fff" : "#000", border:"none", borderRadius:10, fontWeight:700, fontSize:14, cursor:"pointer", opacity:typed.trim()?1:0.4 }}>Verificar ✓</button>
                   </>
                 )}
                 {writeResult === "correct" && (
                   <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:8 }}>
                     <div style={{ fontSize:40 }}>🎯</div>
-                    <div style={{ color:"#10b981", fontWeight:700, fontSize:18 }}>¡Correcto!</div>
+                    <div style={{ color:"#10b981", fontWeight:700, fontSize:18 }}>¡Correcto! ¡Bacán! 🇨🇱</div>
                     <div style={{ fontSize:13, color:"#aaa", fontStyle:"italic" }}>🇺🇸 "{currentCard.example}"</div>
                     <div style={{ fontSize:13, color:"#666" }}>🇨🇱 "{currentCard.exampleEs}"</div>
-                    <button onClick={()=>speak(currentCard.word,setVoiceInfo)} style={{ background:"#052e16", border:"1px solid #10b98155", color:"#10b981", borderRadius:99, padding:"6px 18px", fontSize:13, cursor:"pointer", fontWeight:600 }}>🔊 Escuchar</button>
+                    <button onClick={()=>speak(currentCard.translation,setVoiceInfo)} style={{ background:"#052e16", border:"1px solid #10b98155", color:"#10b981", borderRadius:99, padding:"6px 18px", fontSize:13, cursor:"pointer", fontWeight:600 }}>🔊 Escuchar</button>
                   </div>
                 )}
                 {writeResult === "wrong" && (
                   <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:8 }}>
                     <div style={{ fontSize:36 }}>🤔</div>
-                    <div style={{ color:"#ef4444", fontWeight:700, fontSize:15 }}>Casi... La respuesta correcta es:</div>
-                    <div style={{ display:"flex", gap:4, flexWrap:"wrap", justifyContent:"center", margin:"6px 0" }}>
-                      {feedback?.map((f,i)=>(
-                        <span key={i} style={{ display:"inline-block", minWidth:28, padding:"6px 4px", borderRadius:6, textAlign:"center", fontWeight:800, fontSize:18, background:f.status==="correct"?"#064e3b":f.status==="wrong"?"#7f1d1d":"#1a1a1a", color:f.status==="correct"?"#6ee7b7":f.status==="wrong"?"#fca5a5":"#555", border:`1px solid ${f.status==="correct"?"#10b981":f.status==="wrong"?"#ef4444":"#333"}` }}>{f.letter}</span>
-                      ))}
-                    </div>
+                    <div style={{ color:"#ef4444", fontWeight:700, fontSize:15 }}>Casi... La respuesta es:</div>
+                    <div style={{ fontSize:18, fontWeight:800, color:cat?.color }}>{currentCard.translation}</div>
                     <div style={{ fontSize:13, color:"#aaa", fontStyle:"italic" }}>🇺🇸 "{currentCard.example}"</div>
                     <div style={{ fontSize:13, color:"#666" }}>🇨🇱 "{currentCard.exampleEs}"</div>
-                    <button onClick={()=>speak(currentCard.word,setVoiceInfo)} style={{ background:"#2a2a2a", border:"1px solid #ef444455", color:"#fca5a5", borderRadius:99, padding:"6px 18px", fontSize:13, cursor:"pointer", fontWeight:600 }}>🔊 Pronunciación</button>
+                    <button onClick={()=>speak(currentCard.translation,setVoiceInfo)} style={{ background:"#2a2a2a", border:"1px solid #ef444455", color:"#fca5a5", borderRadius:99, padding:"6px 18px", fontSize:13, cursor:"pointer", fontWeight:600 }}>🔊 Pronunciación</button>
                   </div>
                 )}
               </div>
@@ -318,8 +375,11 @@ export default function App() {
           {studyMode === "fill" && (
             <>
               <div style={{ background:"#1a1a1a", border:`2px solid ${!chosen?cat?.color+"44":isCorrect?"#10b981":"#ef4444"}`, borderRadius:20, padding:"28px 20px", textAlign:"center", marginBottom:20, transition:"border 0.3s" }}>
-                <div style={{ fontSize:13, color:"#888", marginBottom:14 }}>Completa la oración:</div>
-                <div style={{ fontSize:17, color:"#ddd", lineHeight:1.8, marginBottom:20, fontStyle:"italic" }}>"{blankExample}"</div>
+                <div style={{ fontSize:13, color:"#888", marginBottom:14 }}>{isChilenismo ? "¿Cómo se dice en inglés? 🇺🇸" : "Completa la oración:"}</div>
+                {isChilenismo
+                  ? <div style={{ fontSize:22, fontWeight:800, color:cat?.color, marginBottom:20 }}>{currentCard.word}</div>
+                  : <div style={{ fontSize:17, color:"#ddd", lineHeight:1.8, marginBottom:20, fontStyle:"italic" }}>"{blankExample}"</div>
+                }
                 <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
                   {options.map(opt => {
                     const isRight  = opt === currentCard.word;
@@ -331,7 +391,7 @@ export default function App() {
                     }
                     return (
                       <div key={opt} style={{ display:"flex", alignItems:"center", gap:10 }}>
-                        <button onClick={()=>handleFillChoice(opt)} disabled={!!chosen} style={{ flex:1, padding:"12px 16px", background:bg, color, border:`1.5px solid ${border}`, borderRadius:12, fontWeight:700, fontSize:15, cursor:chosen?"default":"pointer", transition:"all 0.2s", textAlign:"left", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                        <button onClick={()=>handleFillChoice(opt)} disabled={!!chosen} style={{ flex:1, padding:"12px 16px", background:bg, color, border:`1.5px solid ${border}`, borderRadius:12, fontWeight:700, fontSize:14, cursor:chosen?"default":"pointer", transition:"all 0.2s", textAlign:"left", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                           <span>{opt}</span>
                           {chosen && isRight  && <span>✅</span>}
                           {chosen && isPicked && !isRight && <span>❌</span>}
@@ -344,10 +404,10 @@ export default function App() {
                 {chosen && (
                   <div style={{ marginTop:16, padding:"16px", background:"#111", borderRadius:14, textAlign:"left" }}>
                     <div style={{ fontWeight:800, fontSize:16, color:isCorrect?"#10b981":"#ef4444", marginBottom:10 }}>
-                      {isCorrect ? "🎯 ¡Correcto!" : `❌ Era: ${currentCard.word}`}
+                      {isCorrect ? "🎯 ¡Correcto! ¡Cachaste!" : `❌ Era: ${currentCard.word}`}
                     </div>
                     <div style={{ fontSize:13, color:"#aaa", marginBottom:8 }}>
-                      <span style={{ color:cat?.color, fontWeight:700 }}>{currentCard.word}</span> = {currentCard.translation} · <span style={{ color:"#555" }}>{currentCard.phonetic}</span>
+                      <span style={{ color:cat?.color, fontWeight:700 }}>{currentCard.word}</span> → <span style={{ color:"#fff" }}>{currentCard.translation}</span>
                     </div>
                     <div style={{ fontSize:13, color:"#777", fontStyle:"italic", lineHeight:1.6, marginBottom:4 }}>🇺🇸 "{currentCard.example}"</div>
                     <div style={{ fontSize:13, color:"#555", fontStyle:"italic", lineHeight:1.6 }}>🇨🇱 "{currentCard.exampleEs}"</div>
